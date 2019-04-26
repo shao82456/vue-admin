@@ -7,7 +7,7 @@
 					<el-input v-model="filters.name" placeholder="姓名"></el-input>
 				</el-form-item>
 				<el-form-item>
-					<el-button type="primary" v-on:click="getUsers">查询</el-button>
+					<el-button type="primary" v-on:click="getTasks">查询</el-button>
 				</el-form-item>
 				<el-form-item>
 					<el-button type="primary" @click="handleAdd">新增</el-button>
@@ -16,20 +16,16 @@
 		</el-col>
 
 		<!--列表-->
-		<el-table :data="users" highlight-current-row v-loading="listLoading" @selection-change="selsChange" style="width: 100%;">
-			<el-table-column type="selection" width="55">
+		<el-table :data="tasks" highlight-current-row v-loading="listLoading" @selection-change="selsChange" style="width: 100%;">
+			<el-table-column prop="uid" label="用户" width="120" sortable>
 			</el-table-column>
-			<el-table-column type="index" width="60">
+			<el-table-column prop="name" label="名称" width="240" sortable>
 			</el-table-column>
-			<el-table-column prop="name" label="姓名" width="120" sortable>
+			<el-table-column prop="descript" label="描述" width="240" sortable>
 			</el-table-column>
-			<el-table-column prop="sex" label="性别" width="100" :formatter="formatSex" sortable>
+			<el-table-column prop="cron" label="执行计划" width="240" sortable>
 			</el-table-column>
-			<el-table-column prop="age" label="年龄" width="100" sortable>
-			</el-table-column>
-			<el-table-column prop="birth" label="生日" width="120" sortable>
-			</el-table-column>
-			<el-table-column prop="addr" label="地址" min-width="180" sortable>
+			<el-table-column prop="status" label="状态" min-width="100" sortable>
 			</el-table-column>
 			<el-table-column label="操作" width="150">
 				<template scope="scope">
@@ -42,7 +38,7 @@
 		<!--工具条-->
 		<el-col :span="24" class="toolbar">
 			<el-button type="danger" @click="batchRemove" :disabled="this.sels.length===0">批量删除</el-button>
-			<el-pagination layout="prev, pager, next" @current-change="handleCurrentChange" :page-size="20" :total="total" style="float:right;">
+			<el-pagination layout="prev, pager, next" @current-change="handleCurrentChange" :page-size="12" :total="total" style="float:right;">
 			</el-pagination>
 		</el-col>
 
@@ -115,7 +111,7 @@
 				filters: {
 					name: ''
 				},
-				users: [],
+				tasks: [],
 				total: 0,
 				page: 1,
 				listLoading: false,
@@ -163,19 +159,18 @@
 			},
 			handleCurrentChange(val) {
 				this.page = val;
-				this.getUsers();
+				this.getTasks();
 			},
-			//获取用户列表
-			getUsers() {
+			//获取任务列表
+			getTasks() {
 				let para = {
-					page: this.page,
-					name: this.filters.name
+					pageNum: this.page,
 				};
 				this.listLoading = true;
 				//NProgress.start();
 				getUserListPage(para).then((res) => {
-					this.total = res.data.total;
-					this.users = res.data.users;
+					this.total=res.data.total;
+					this.tasks = res.data.tasks;
 					this.listLoading = false;
 					//NProgress.done();
 				});
@@ -195,7 +190,7 @@
 							message: '删除成功',
 							type: 'success'
 						});
-						this.getUsers();
+						this.getTasks();
 					});
 				}).catch(() => {
 
@@ -235,7 +230,7 @@
 								});
 								this.$refs['editForm'].resetFields();
 								this.editFormVisible = false;
-								this.getUsers();
+								this.getTasks();
 							});
 						});
 					}
@@ -259,7 +254,7 @@
 								});
 								this.$refs['addForm'].resetFields();
 								this.addFormVisible = false;
-								this.getUsers();
+								this.getTasks();
 							});
 						});
 					}
@@ -284,7 +279,7 @@
 							message: '删除成功',
 							type: 'success'
 						});
-						this.getUsers();
+						this.getTasks();
 					});
 				}).catch(() => {
 
@@ -292,7 +287,7 @@
 			}
 		},
 		mounted() {
-			this.getUsers();
+			this.getTasks();
 		}
 	}
 

@@ -1,7 +1,7 @@
 import axios from 'axios';
 import MockAdapter from 'axios-mock-adapter';
-import { LoginUsers, Users } from './data/user';
-let _Users = Users;
+import { loginUsers, tasks } from './data/user';
+let _tasks = tasks;
 
 export default {
   /**
@@ -26,8 +26,8 @@ export default {
       return new Promise((resolve, reject) => {
         let user = null;
         setTimeout(() => {
-          let hasUser = LoginUsers.some(u => {
-            if (u.username === username && u.password === password) {
+          let hasUser = loginUsers.some(u => {
+            if (u.name === username && u.password === password) {
               user = JSON.parse(JSON.stringify(u));
               user.password = undefined;
               return true;
@@ -46,7 +46,7 @@ export default {
     //获取用户列表
     mock.onGet('/user/list').reply(config => {
       let {name} = config.params;
-      let mockUsers = _Users.filter(user => {
+      let mockUsers = _tasks.filter(user => {
         if (name && user.name.indexOf(name) == -1) return false;
         return true;
       });
@@ -60,19 +60,15 @@ export default {
     });
 
     //获取用户列表（分页）
-    mock.onGet('/user/listpage').reply(config => {
-      let {page, name} = config.params;
-      let mockUsers = _Users.filter(user => {
-        if (name && user.name.indexOf(name) == -1) return false;
-        return true;
-      });
-      let total = mockUsers.length;
-      mockUsers = mockUsers.filter((u, index) => index < 20 * page && index >= 20 * (page - 1));
+    mock.onGet('/task/list').reply(config => {
+      let {pageNum} = config.params;
+      let total = tasks.length;
+      let mockTasks = tasks.filter((u, index) => index < 12 * pageNum && index >= 12 * (pageNum - 1));
       return new Promise((resolve, reject) => {
         setTimeout(() => {
           resolve([200, {
             total: total,
-            users: mockUsers
+            tasks: mockTasks
           }]);
         }, 1000);
       });
@@ -81,7 +77,7 @@ export default {
     //删除用户
     mock.onGet('/user/remove').reply(config => {
       let { id } = config.params;
-      _Users = _Users.filter(u => u.id !== id);
+      _tasks = _tasks.filter(u => u.id !== id);
       return new Promise((resolve, reject) => {
         setTimeout(() => {
           resolve([200, {
@@ -96,7 +92,7 @@ export default {
     mock.onGet('/user/batchremove').reply(config => {
       let { ids } = config.params;
       ids = ids.split(',');
-      _Users = _Users.filter(u => !ids.includes(u.id));
+      _tasks = _tasks.filter(u => !ids.includes(u.id));
       return new Promise((resolve, reject) => {
         setTimeout(() => {
           resolve([200, {
@@ -110,7 +106,7 @@ export default {
     //编辑用户
     mock.onGet('/user/edit').reply(config => {
       let { id, name, addr, age, birth, sex } = config.params;
-      _Users.some(u => {
+      _tasks.some(u => {
         if (u.id === id) {
           u.name = name;
           u.addr = addr;
@@ -133,7 +129,7 @@ export default {
     //新增用户
     mock.onGet('/user/add').reply(config => {
       let { name, addr, age, birth, sex } = config.params;
-      _Users.push({
+      _tasks.push({
         name: name,
         addr: addr,
         age: age,
