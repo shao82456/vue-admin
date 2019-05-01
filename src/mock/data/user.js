@@ -11,11 +11,13 @@ const tasks = [];
 
 for (let i = 0; i < 86; i++) {
   tasks.push(Mock.mock({
+    id:Mock.Random.getuid(),
     uid: Mock.Random.getuid(),
     name: Mock.Random.cname(),
-    descript:'test',
+    command:'bash '+Mock.Random.cname()+'.sh',
     cron:'0 0  * *  * ? ',
-    status:0
+    status:Mock.Random.getstatus(),
+    descript:'test'
   }));
 }
 

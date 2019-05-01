@@ -104,37 +104,40 @@ export default {
     });
 
     //编辑用户
-    mock.onGet('/user/edit').reply(config => {
-      let { id, name, addr, age, birth, sex } = config.params;
-      _tasks.some(u => {
-        if (u.id === id) {
-          u.name = name;
-          u.addr = addr;
-          u.age = age;
-          u.birth = birth;
-          u.sex = sex;
-          return true;
-        }
-      });
-      return new Promise((resolve, reject) => {
-        setTimeout(() => {
-          resolve([200, {
-            code: 200,
-            msg: '编辑成功'
-          }]);
-        }, 500);
-      });
+    mock.onPost('/task/update').reply(config => {
+      alert(config.data);
+      // let { id, name, addr, age, birth, sex } = config.params;
+      // _tasks.some(u => {
+      //   if (u.id === id) {
+      //     u.name = name;
+      //     u.addr = addr;
+      //     u.age = age;
+      //     u.birth = birth;
+      //     u.sex = sex;
+      //     return true;
+      //   }
+      // });
+      // return new Promise((resolve, reject) => {
+      //   setTimeout(() => {
+      //     resolve([200, {
+      //       code: 200,
+      //       msg: '编辑成功'
+      //     }]);
+      //   }, 500);
+      // });
     });
 
-    //新增用户
-    mock.onGet('/user/add').reply(config => {
-      let { name, addr, age, birth, sex } = config.params;
+    //新增任务
+    mock.onPost('/task/add').reply(config => {
+      let { name, command, cron, status, descript } = JSON.parse(config.data);
+      alert(config.data);
       _tasks.push({
+        uid:100,
         name: name,
-        addr: addr,
-        age: age,
-        birth: birth,
-        sex: sex
+        command:command,
+        cron: cron,
+        status: status,
+        descript: descript
       });
       return new Promise((resolve, reject) => {
         setTimeout(() => {

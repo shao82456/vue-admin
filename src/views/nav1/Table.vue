@@ -4,7 +4,7 @@
 		<el-col :span="24" class="toolbar" style="padding-bottom: 0px;">
 			<el-form :inline="true" :model="filters">
 				<el-form-item>
-					<el-input v-model="filters.name" placeholder="姓名"></el-input>
+					<el-input v-model="filters.name" placeholder="名称"></el-input>
 				</el-form-item>
 				<el-form-item>
 					<el-button type="primary" v-on:click="getTasks">查询</el-button>
@@ -21,14 +21,18 @@
 			</el-table-column>
 			<el-table-column prop="name" label="名称" width="240" sortable>
 			</el-table-column>
-			<el-table-column prop="descript" label="描述" width="240" sortable>
+			<el-table-column prop="status" label="状态" width="120" :formatter="status_info" sortable>
 			</el-table-column>
-			<el-table-column prop="cron" label="执行计划" width="240" sortable>
+			<el-table-column prop="command" label="命令" width="360" sortable>
 			</el-table-column>
-			<el-table-column prop="status" label="状态" min-width="100" sortable>
+			<el-table-column prop="cron" label="执行计划" width="120" sortable>
 			</el-table-column>
-			<el-table-column label="操作" width="150">
-				<template scope="scope">
+			<el-table-column prop="descript" label="描述" min-width="240" sortable>
+			</el-table-column>
+
+			<el-table-column label="操作" width="240">
+				<template slot-scope="scope">
+					<el-button type="primary" size="small" @click="handleUpload(scope.$index, scope.row)">上传包</el-button>
 					<el-button size="small" @click="handleEdit(scope.$index, scope.row)">编辑</el-button>
 					<el-button type="danger" size="small" @click="handleDel(scope.$index, scope.row)">删除</el-button>
 				</template>
@@ -42,58 +46,81 @@
 			</el-pagination>
 		</el-col>
 
+		<!--上传界面-->
+		<el-dialog title="上传" v-model="uploadFormVisible" :close-on-click-modal="true" width="20%" @close="afterUpload">
+			<ul>
+				<li v-for="(file, index) in files" :key="file.id">
+					<span>{{file.name}}</span>
+					<span>{{file.size | formatSize1}}MB</span>
+					<span v-if="file.error">{{file.error}}</span>
+					<span v-else-if="file.success">success</span>
+					<span v-else-if="file.active">uploading</span>
+					<span v-else-if="file.active">uploading</span>
+					<span v-else></span>
+				</li>
+			</ul>
+			<file-upload
+					class="btn btn-primary"
+					:post-action="uploadpath"
+					accept="application/zip"
+					v-model="files"
+					@input-filter="inputFilter"
+					@input-file="inputFile"
+					ref="upload">
+				<i class="fa fa-plus"></i>
+				选择文件
+			</file-upload>
+			<el-button  size="small" class="fa fa-arrow-up" v-if="!$refs.upload || !$refs.upload.active" @click.prevent="$refs.upload.active = true" style="margin-left:70%">
+				上传
+			</el-button>
+		</el-dialog>
+
 		<!--编辑界面-->
-		<el-dialog title="编辑" v-model="editFormVisible" :close-on-click-modal="false">
+		<el-dialog title="编辑" v-model="editFormVisible" :close-on-click-modal="true">
 			<el-form :model="editForm" label-width="80px" :rules="editFormRules" ref="editForm">
-				<el-form-item label="姓名" prop="name">
+				<el-form-item label="名称" prop="name">
 					<el-input v-model="editForm.name" auto-complete="off"></el-input>
 				</el-form-item>
-				<el-form-item label="性别">
-					<el-radio-group v-model="editForm.sex">
-						<el-radio class="radio" :label="1">男</el-radio>
-						<el-radio class="radio" :label="0">女</el-radio>
-					</el-radio-group>
+				<el-form-item label="命令" prop="command">
+					<el-input v-model="editForm.command" auto-complete="off"></el-input>
 				</el-form-item>
-				<el-form-item label="年龄">
-					<el-input-number v-model="editForm.age" :min="0" :max="200"></el-input-number>
+				<el-form-item label="执行计划"  prop="cron">
+					<el-input v-model="editForm.cron"  auto-complete="off"></el-input>
 				</el-form-item>
-				<el-form-item label="生日">
-					<el-date-picker type="date" placeholder="选择日期" v-model="editForm.birth"></el-date-picker>
+				<el-form-item label="立即生效">
+					<el-checkbox v-model="editForm.status_use" checked >启用</el-checkbox>
 				</el-form-item>
-				<el-form-item label="地址">
-					<el-input type="textarea" v-model="editForm.addr"></el-input>
+				<el-form-item label="描述">
+					<el-input type="textarea" v-model="editForm.descript"></el-input>
 				</el-form-item>
 			</el-form>
 			<div slot="footer" class="dialog-footer">
-				<el-button @click.native="editFormVisible = false">取消</el-button>
+				<el-button @click.native="editFormVisible = false,editLoading=false">取消</el-button>
 				<el-button type="primary" @click.native="editSubmit" :loading="editLoading">提交</el-button>
 			</div>
 		</el-dialog>
 
 		<!--新增界面-->
-		<el-dialog title="新增" v-model="addFormVisible" :close-on-click-modal="false">
+		<el-dialog title="新增" v-model="addFormVisible" :close-on-click-modal="true" >
 			<el-form :model="addForm" label-width="80px" :rules="addFormRules" ref="addForm">
-				<el-form-item label="姓名" prop="name">
+				<el-form-item label="名称" prop="name">
 					<el-input v-model="addForm.name" auto-complete="off"></el-input>
 				</el-form-item>
-				<el-form-item label="性别">
-					<el-radio-group v-model="addForm.sex">
-						<el-radio class="radio" :label="1">男</el-radio>
-						<el-radio class="radio" :label="0">女</el-radio>
-					</el-radio-group>
+				<el-form-item label="命令" prop="command">
+					<el-input v-model="addForm.command" auto-complete="off"></el-input>
 				</el-form-item>
-				<el-form-item label="年龄">
-					<el-input-number v-model="addForm.age" :min="0" :max="200"></el-input-number>
+				<el-form-item label="执行计划"  prop="cron">
+					<el-input v-model="addForm.cron" placeholder="0 0 8 * * ?" auto-complete="off"></el-input>
 				</el-form-item>
-				<el-form-item label="生日">
-					<el-date-picker type="date" placeholder="选择日期" v-model="addForm.birth"></el-date-picker>
+				<el-form-item label="立即生效">
+						<el-checkbox v-model="addForm.status" checked >启用</el-checkbox>
 				</el-form-item>
-				<el-form-item label="地址">
-					<el-input type="textarea" v-model="addForm.addr"></el-input>
+				<el-form-item label="描述">
+					<el-input type="textarea" v-model="addForm.descript"></el-input>
 				</el-form-item>
 			</el-form>
 			<div slot="footer" class="dialog-footer">
-				<el-button @click.native="addFormVisible = false">取消</el-button>
+				<el-button @click.native="addFormVisible = false,addLoading=false">取消</el-button>
 				<el-button type="primary" @click.native="addSubmit" :loading="addLoading">提交</el-button>
 			</div>
 		</el-dialog>
@@ -101,11 +128,20 @@
 </template>
 
 <script>
+	import FileUpload from 'vue-upload-component'
 	import util from '../../common/js/util'
 	//import NProgress from 'nprogress'
-	import { getUserListPage, removeUser, batchRemoveUser, editUser, addUser } from '../../api/api';
+	import { getUserListPage, removeUser, batchRemoveUser, editTask, addTask } from '../../api/api';
 
 	export default {
+		components: {
+			FileUpload,
+		},
+		filters:{
+			formatSize1(size){
+				return Math.round(size/1000/1000)
+			}
+		},
 		data() {
 			return {
 				filters: {
@@ -116,46 +152,70 @@
 				page: 1,
 				listLoading: false,
 				sels: [],//列表选中列
-
+				uploadFormVisible:false,
 				editFormVisible: false,//编辑界面是否显示
 				editLoading: false,
 				editFormRules: {
 					name: [
-						{ required: true, message: '请输入姓名', trigger: 'blur' }
+						{ required: true, message: '名称为空', trigger: 'blur' }
+					],
+					command:[
+						{ required: true, message: '执行命令为空', trigger: 'blur' }
+					],
+					cron:[
+						{ required: true, message: '执行计划为空', trigger: 'blur' }
 					]
 				},
 				//编辑界面数据
 				editForm: {
-					id: 0,
+					id:0,
 					name: '',
-					sex: -1,
-					age: 0,
-					birth: '',
-					addr: ''
+					command: '',
+					cron: '',
+					status:1,
+					descript: ' ',
+					status_use:true
 				},
-
+				uploadForm:{
+					id:0,
+					name:''
+				},
 				addFormVisible: false,//新增界面是否显示
 				addLoading: false,
 				addFormRules: {
 					name: [
-						{ required: true, message: '请输入姓名', trigger: 'blur' }
+						{ required: true, message: '名称为空', trigger: 'blur' }
+					],
+					command:[
+						{ required: true, message: '执行命令为空', trigger: 'blur' }
+					],
+					cron:[
+						{ required: true, message: '执行计划为空', trigger: 'blur' }
 					]
 				},
 				//新增界面数据
 				addForm: {
 					name: '',
-					sex: -1,
-					age: 0,
-					birth: '',
-					addr: ''
-				}
-
+					command: '',
+					cron: '',
+					status:1 ,
+					descript: ' '
+				},
+				files:[]
 			}
 		},
 		methods: {
 			//性别显示转换
 			formatSex: function (row, column) {
 				return row.sex == 1 ? '男' : row.sex == 0 ? '女' : '未知';
+			},
+			status_info:function (row,column) {
+				if(row.status==0)
+					return '已启用'
+				else if(row.status==1)
+					return '无运行包'
+				else
+					return '未启用'
 			},
 			handleCurrentChange(val) {
 				this.page = val;
@@ -165,6 +225,7 @@
 			getTasks() {
 				let para = {
 					pageNum: this.page,
+					partName:this.filters.name
 				};
 				this.listLoading = true;
 				//NProgress.start();
@@ -196,6 +257,45 @@
 
 				});
 			},
+			//显示上传界面
+			handleUpload: function (index, row) {
+				this.uploadFormVisible = true;
+				this.uploadForm = Object.assign({}, row);
+			},
+			afterUpload (){
+				this.files=[]
+				this.getTasks()
+			},
+			inputFilter(newFile, oldFile, prevent) {
+				if (newFile && !oldFile) {
+					// Before adding a file
+					// 添加文件前
+					// Filter system files or hide files
+					// 过滤系统文件 和隐藏文件
+					if (/(\/|^)(Thumbs\.db|desktop\.ini|\..+)$/.test(newFile.name)) {
+						return prevent()
+					}
+					// Filter php html js file
+					// 过滤 php html js 文件
+					if (/\.(php5?|html?|jsx?)$/i.test(newFile.name)) {
+						return prevent()
+					}
+				}
+			},
+			inputFile(newFile, oldFile) {
+				if (newFile && !oldFile) {
+					// add
+					console.log('add', newFile)
+				}
+				if (newFile && oldFile) {
+					// update
+					console.log('update', newFile)
+				}
+				if (!newFile && oldFile) {
+					// remove
+					console.log('remove', oldFile)
+				}
+			},
 			//显示编辑界面
 			handleEdit: function (index, row) {
 				this.editFormVisible = true;
@@ -206,10 +306,6 @@
 				this.addFormVisible = true;
 				this.addForm = {
 					name: '',
-					sex: -1,
-					age: 0,
-					birth: '',
-					addr: ''
 				};
 			},
 			//编辑
@@ -220,17 +316,25 @@
 							this.editLoading = true;
 							//NProgress.start();
 							let para = Object.assign({}, this.editForm);
-							para.birth = (!para.birth || para.birth == '') ? '' : util.formatDate.format(new Date(para.birth), 'yyyy-MM-dd');
-							editUser(para).then((res) => {
-								this.editLoading = false;
-								//NProgress.done();
-								this.$message({
-									message: '提交成功',
-									type: 'success'
-								});
-								this.$refs['editForm'].resetFields();
-								this.editFormVisible = false;
-								this.getTasks();
+							//如果para.status是true，则保留原样，即要么0启用，要么１　启用无依赖包
+							para.status = (para.status_use===true) ? para.status : 2;
+							editTask(para).then(res => {
+								let {code,msg}=res.data
+								if(code!==200){
+									this.$message({
+										message: msg,
+										type: 'error'
+									});
+								}else{
+									this.$message({
+										message: '提交成功',
+										type: 'success'
+									});
+									this.$refs['editForm'].resetFields();
+									this.editFormVisible = false;
+									this.getTasks();
+								}
+								this.editLoading=false
 							});
 						});
 					}
@@ -244,17 +348,25 @@
 							this.addLoading = true;
 							//NProgress.start();
 							let para = Object.assign({}, this.addForm);
-							para.birth = (!para.birth || para.birth == '') ? '' : util.formatDate.format(new Date(para.birth), 'yyyy-MM-dd');
-							addUser(para).then((res) => {
-								this.addLoading = false;
-								//NProgress.done();
-								this.$message({
-									message: '提交成功',
-									type: 'success'
-								});
-								this.$refs['addForm'].resetFields();
-								this.addFormVisible = false;
-								this.getTasks();
+							para.status = (para.status===true) ? 1 : 2;
+							addTask(para).then(res => {
+								let {code,msg}=res.data
+								if (code !== 200) {
+									this.$message({
+										message: msg,
+										type: 'error'
+									});
+								} else {
+									//NProgress.done();
+									this.$message({
+										message: '提交成功',
+										type: 'success'
+									});
+									this.$refs['addForm'].resetFields();
+									this.addFormVisible = false;
+									this.getTasks();
+								}
+								this.addLoading=false
 							});
 						});
 					}
@@ -284,6 +396,12 @@
 				}).catch(() => {
 
 				});
+			}
+		},
+		computed:{
+			uploadpath() {
+				// `this` 指向 vm 实例
+				return '/upload/tasklib/'+this.uploadForm.id
 			}
 		},
 		mounted() {
