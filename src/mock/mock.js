@@ -59,6 +59,18 @@ export default {
       });
     });
 
+    mock.onGet('/help/cronTime').reply(config => {
+      let {cron}=config.params;
+      return new Promise((resolve, reject) => {
+        setTimeout(() => {
+          resolve([200, {
+            code: 200,
+            data:["2019-05-09 00:00:00","2019-05-10 00:00:00","2019-05-11 00:00:00","2019-05-12 00:00:00","2019-05-13 00:00:00"]
+          }]);
+        }, 1000);
+      });
+    });
+
     //获取用户列表（分页）
     mock.onGet('/task/list').reply(config => {
       let {pageNum} = config.params;
@@ -72,6 +84,11 @@ export default {
           }]);
         }, 1000);
       });
+    });
+
+    mock.onGet('/task/:id').reply(config => {
+      alert(id)
+      console.log("hehe")
     });
 
     //删除用户

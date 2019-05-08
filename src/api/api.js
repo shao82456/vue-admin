@@ -15,3 +15,7 @@ export const batchRemoveUser = params => { return axios.get(`${base}/user/batchr
 export const editTask = params => { return axios.post(`${base}/task/update`, params); };
 
 export const addTask = params => { return axios.post(`${base}/task/add`, params); };
+
+export const enableTask= params => { return axios.get(`${base}/task/cron/${params}`); };
+
+export const cronTime= params => { return axios.get(`${base}/help/cronTime`,{ params: params }); };
